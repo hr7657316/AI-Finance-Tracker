@@ -1,48 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AI-Finance Tracker
 
-## Getting Started
+A full-stack expense tracker built with Next.js (App Router), Clerk authentication, and Prisma + PostgreSQL.
 
-### Environment variables
+## Features
 
-Create `.env.local` for Next.js runtime and `.env` for Prisma CLI.
+- Authentication with Clerk (sign-in/sign-up routes + middleware protected pages)
+- Accounts (create accounts, mark default)
+- Transactions
+	- Create income/expense transactions
+	- Transactions list (recent transactions)
+	- Account balance updates automatically on create/delete
+- Modern UI using Tailwind + shadcn/ui components
 
-- `DATABASE_URL`: app runtime DB connection (Neon pooled URL is OK)
-- `DIRECT_URL`: Prisma migrations/introspection (prefer Neon "Direct" non-pooled URL)
+## Tech Stack
 
-You can start from `.env.example`.
+- Next.js 15 (App Router)
+- React 18
+- Clerk (Auth)
+- Prisma ORM
+- PostgreSQL (tested with Neon)
+- Tailwind CSS + shadcn/ui
 
-First, run the development server:
+## Local Setup
 
+### 1) Install dependencies
 
-https://spendwise-ai-x71b.vercel.app/
+```bash
+npm install
+```
+
+### 2) Set environment variables
+
+This repo uses:
+
+- `.env.local` for Next.js runtime
+- `.env` for Prisma CLI (migrate/introspect)
+
+Start from `.env.example`:
+
+```bash
+cp .env.example .env.local
+cp .env.example .env
+```
+
+Fill in these values:
+
+- `DATABASE_URL` (Postgres connection string)
+	- On Neon: use the pooled/pgbouncer URL here
+- `DIRECT_URL` (optional but recommended)
+	- On Neon: use the non-pooled “Direct” connection string here for migrations
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+
+### 3) Run Prisma migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### 4) Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` home
+- `/sign-in` / `/sign-up` Clerk auth
+- `/dashboard` (protected)
+- `/account` (protected)
+- `/transaction` (protected)
+- `/transaction/create` (protected)
 
-## Learn More
+## Architecture (How it works)
 
-To learn more about Next.js, take a look at the following resources:
+### App Router
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `app/` contains pages/layouts.
+- Pages are mostly Server Components; interactive forms are Client Components.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Authentication
 
-## Deploy on Vercel
+- Clerk provides the user session.
+- `middleware.js` protects private routes.
+- `lib/checkUser.js` syncs the signed-in Clerk user into the local `User` table.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Database
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Prisma models live in `prisma/schema.prisma`.
+- Main entities:
+	- `User`
+	- `Account` (with `balance`, `isDefault`)
+	- `Transaction` (income/expense, category, date, optional description)
+	- `Budget` (basic budget tracking)
+
+### Server Actions
+
+- `actions/*` contains server actions that run on the server and talk to Prisma.
+- After mutations, pages are refreshed using `revalidatePath`.
+
+## Common Issues
+
+- Prisma can read `.env` by default for CLI commands; keep `.env` in sync with `.env.local`.
+- If you update env vars, restart the dev server (and if needed remove `.next`).
+
+## Deployment Notes
+
+- Make sure env vars are configured in your hosting provider.
+- If deploying to Vercel, configure Clerk + Postgres env vars in the Vercel project settings.

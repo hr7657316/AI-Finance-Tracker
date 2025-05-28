@@ -76,8 +76,7 @@ const CreateAccountDrawer = ({children}) => {
     return (
     <Drawer open={open} onOpenChange={setOpen}>
 
-        <DrawerTrigger> {children}
-        </DrawerTrigger>
+      <DrawerTrigger asChild>{children}</DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
                     <DrawerTitle>
